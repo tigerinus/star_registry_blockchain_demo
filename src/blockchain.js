@@ -70,7 +70,7 @@ class Blockchain {
     return new Promise(async (resolve, reject) => {
       this.getChainHeight().then((height) => {
         block.height = height + 1;
-        block.previousBlockHash = self.chain[height].hash;
+        block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
         block.time = getCurrentTime();
         block.generateHash();
 
@@ -191,7 +191,7 @@ class Blockchain {
   getStarsByWalletAddress(address) {
     let self = this;
     let stars = [];
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 
       if (!self.chain || self.chain.length <= 1) {
         resolve(stars);
@@ -200,7 +200,7 @@ class Blockchain {
 
       for(let i = 1; i < self.chain.length; i++) {
         let block = self.chain[i];
-        let data = Promise.resolve(block.getBData());
+        let data = await block.getBData();
         if (data.address === address) {
           stars.push(data.star);
         }
