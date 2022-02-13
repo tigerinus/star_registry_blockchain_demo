@@ -27,8 +27,6 @@ class ApplicationServer {
 		this.initExpressMiddleWare();
 		//Method that initialized the controllers where you defined the endpoints
 		this.initControllers();
-		//Method that run the express application.
-		this.start();
 	}
 
 	initExpress() {
@@ -54,4 +52,4 @@ class ApplicationServer {
 
 }
 
-new ApplicationServer();
+new ApplicationServer().start();
