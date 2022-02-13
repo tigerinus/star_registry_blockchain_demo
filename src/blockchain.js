@@ -12,6 +12,10 @@ const SHA256 = require('crypto-js/sha256');
 const BlockClass = require('./block.js');
 const bitcoinMessage = require('bitcoinjs-message');
 
+function getCurrentTime() {
+  return parseInt(new Date().getTime().toString().slice(0, -3));
+}
+
 class Blockchain {
 
   /**
@@ -67,7 +71,7 @@ class Blockchain {
       this.getChainHeight().then((height) => {
         block.height = height + 1;
         block.previousBlockHash = self.chain[height].hash;
-        block.time = new Date().getTime();
+        block.time = getCurrentTime();
         block.generateHash();
 
         self.chain.push(block);
@@ -90,7 +94,7 @@ class Blockchain {
    */
   requestMessageOwnershipVerification(address) {
     return new Promise((resolve) => {
-      let message = `${address}:${new Date().getTime().toString().slice(0, -3)}:starRegistry`;
+      let message = `${address}:${getCurrentTime()}:starRegistry`;
       resolve(message);
     });
   }
@@ -115,7 +119,24 @@ class Blockchain {
   submitStar(address, message, signature, star) {
     let self = this;
     return new Promise(async (resolve, reject) => {
+      let messageTime = parseInt(message.split(':')[1]);
+      let currentTime = getCurrentTime();
 
+      if (currentTime > messageTime + (5 * 60)) {
+        reject(new Error('The message is expired'));
+        return;
+      }
+
+      if (!bitcoinMessage.verify(message, address, signature)) {
+        reject(new Error('The message is not valid'));
+        return;
+      }
+
+      let block = new BlockClass.Block(star);
+
+      self._addBlock(block).then((b) => {
+        resolve(b);
+      });
     });
   }
 
