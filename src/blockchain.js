@@ -132,7 +132,12 @@ class Blockchain {
         return;
       }
 
-      let block = new BlockClass.Block(star);
+      let block = new BlockClass.Block({
+        address: address,
+        message: message,
+        signature: signature,
+        star: star
+      });
 
       self._addBlock(block).then((b) => {
         resolve(b);
@@ -149,7 +154,14 @@ class Blockchain {
   getBlockByHash(hash) {
     let self = this;
     return new Promise((resolve, reject) => {
+      let block = self.chain.find((value, index, obj) => value.hash === hash);
 
+      if (block) {
+        resolve(block);
+        return;
+      }
+
+      reject(new Error('Block not found'));
     });
   }
 
@@ -181,6 +193,19 @@ class Blockchain {
     let stars = [];
     return new Promise((resolve, reject) => {
 
+      if (!self.chain || self.chain.length <= 1) {
+        resolve(stars);
+        return;
+      }
+
+      for(let i = 1; i < self.chain.length; i++) {
+        let block = self.chain[i];
+        let data = Promise.resolve(block.getBData());
+        if (data.address === address) {
+          stars.push(data.star);
+        }
+      }
+      resolve(stars);
     });
   }
 
@@ -194,7 +219,31 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
+      if (!self.chain || self.chain.length <= 1) {
+        resolve(errorLog);
+        return;
+      }
 
+      for(let i = 1; i < self.chain.length; i++) {
+        let previousBlock = self.chain[i - 1];
+        let currentBlock = self.chain[i];
+
+        if (previousBlock.hash !== currentBlock.previousBlockHash) {
+          errorLog.push({
+            index: i,
+            error: 'Previous block hash is not equal to current block hash'
+          });
+        }
+
+        if (!Promise.resolve(currentBlock.validate())) {
+          errorLog.push({
+            index: i,
+            error: 'Block is not valid'
+          });
+        }
+      }
+
+      resolve(errorLog);
     });
   }
 
