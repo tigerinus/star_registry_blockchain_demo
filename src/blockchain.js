@@ -68,18 +68,31 @@ class Blockchain {
   _addBlock(block) {
     let self = this;
     return new Promise(async (resolve, reject) => {
-      this.getChainHeight().then((height) => {
-        block.height = height + 1;
-        block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
-        block.time = getCurrentTime();
-        block.generateHash();
+      this.validateChain().then((errorLog) => {
+        if (errorLog.length > 0) {
+          reject(errorLog);
+          return;
+        }
 
-        self.chain.push(block);
-        self.height = block.height;
-
-        resolve(block);
-      }).catch((err) => {
-        reject(err);
+        this.getChainHeight().then((height) => {
+          block.height = height + 1;
+          block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
+          block.time = getCurrentTime();
+          
+          let clone = {...block};
+          delete clone.hash
+          block.hash = SHA256(JSON.stringify(clone)).toString();
+  
+          self.chain.push(block);
+          self.height = block.height;
+  
+          resolve(block);
+        }).catch((err) => {
+          reject(err);
+        });
+  
+      }).catch((error) => {
+        reject(error);
       });
     });
   }
@@ -141,6 +154,8 @@ class Blockchain {
 
       self._addBlock(block).then((b) => {
         resolve(b);
+      }).catch((err) => {
+        reject(err);
       });
     });
   }
@@ -234,8 +249,11 @@ class Blockchain {
             error: 'Previous block hash is not equal to current block hash'
           });
         }
+      }
 
-        if (!Promise.resolve(currentBlock.validate())) {
+      for (let i = 0; i < self.chain.length; i++) {
+        let currentBlock = self.chain[i]; 
+        if (!(await currentBlock.validate())) {
           errorLog.push({
             index: i,
             error: 'Block is not valid'
