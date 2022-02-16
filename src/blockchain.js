@@ -72,7 +72,10 @@ class Blockchain {
         block.height = height + 1;
         block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
         block.time = getCurrentTime();
-        block.generateHash();
+        
+        let clone = {...block};
+        delete clone.hash
+        block.hash = SHA256(JSON.stringify(clone)).toString();
 
         self.chain.push(block);
         self.height = block.height;
@@ -234,8 +237,11 @@ class Blockchain {
             error: 'Previous block hash is not equal to current block hash'
           });
         }
+      }
 
-        if (!Promise.resolve(currentBlock.validate())) {
+      for (let i = 0; i < self.chain.length; i++) {
+        let currentBlock = self.chain[i]; 
+        if (!(await currentBlock.validate())) {
           errorLog.push({
             index: i,
             error: 'Block is not valid'

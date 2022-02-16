@@ -24,16 +24,6 @@ class Block {
     this.previousBlockHash = null;                              // Reference to the previous Block Hash
   }
 
-  generateHash() {
-    let self = this;
-    return new Promise(
-      (resolve) => {
-        self.hash = SHA256(JSON.stringify(self)).toString();
-        resolve(self);
-      }
-    )
-  }
-
   /**
    *  validate() method will validate if the block has been tampered or not.
    *  Been tampered means that someone from outside the application tried to change
@@ -50,15 +40,16 @@ class Block {
     let self = this;
     return new Promise((resolve) => {
       // Save in auxiliary variable the current block hash
-      let previousHash = self.hash;
 
       // Recalculate the hash of the Block
-      self.generateHash();
+      let clone = {...self};
+      delete clone.hash;
+      clone.hash = SHA256(JSON.stringify(clone)).toString();
 
       // Comparing if the hashes changed
       // Returning the Block is not valid
       // Returning the Block is valid
-      resolve(previousHash !== self.hash);
+      resolve(self.hash === clone.hash);
     });
   }
 
