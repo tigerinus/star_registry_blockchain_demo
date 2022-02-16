@@ -68,21 +68,31 @@ class Blockchain {
   _addBlock(block) {
     let self = this;
     return new Promise(async (resolve, reject) => {
-      this.getChainHeight().then((height) => {
-        block.height = height + 1;
-        block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
-        block.time = getCurrentTime();
-        
-        let clone = {...block};
-        delete clone.hash
-        block.hash = SHA256(JSON.stringify(clone)).toString();
+      this.validateChain().then((errorLog) => {
+        if (errorLog.length > 0) {
+          reject(errorLog);
+          return;
+        }
 
-        self.chain.push(block);
-        self.height = block.height;
-
-        resolve(block);
-      }).catch((err) => {
-        reject(err);
+        this.getChainHeight().then((height) => {
+          block.height = height + 1;
+          block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
+          block.time = getCurrentTime();
+          
+          let clone = {...block};
+          delete clone.hash
+          block.hash = SHA256(JSON.stringify(clone)).toString();
+  
+          self.chain.push(block);
+          self.height = block.height;
+  
+          resolve(block);
+        }).catch((err) => {
+          reject(err);
+        });
+  
+      }).catch((error) => {
+        reject(error);
       });
     });
   }
@@ -144,6 +154,8 @@ class Blockchain {
 
       self._addBlock(block).then((b) => {
         resolve(b);
+      }).catch((err) => {
+        reject(err);
       });
     });
   }
