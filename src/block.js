@@ -42,7 +42,7 @@ class Block {
       // Save in auxiliary variable the current block hash
 
       // Recalculate the hash of the Block
-      let clone = {...self};
+      let clone = { ...self };
       delete clone.hash;
       clone.hash = SHA256(JSON.stringify(clone)).toString();
 
