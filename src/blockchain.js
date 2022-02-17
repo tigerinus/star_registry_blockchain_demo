@@ -78,19 +78,19 @@ class Blockchain {
           block.height = height + 1;
           block.previousBlockHash = height === -1 ? null : self.chain[height].hash;
           block.time = getCurrentTime();
-          
-          let clone = {...block};
+
+          let clone = { ...block };
           delete clone.hash
           block.hash = SHA256(JSON.stringify(clone)).toString();
-  
+
           self.chain.push(block);
           self.height = block.height;
-  
+
           resolve(block);
         }).catch((err) => {
           reject(err);
         });
-  
+
       }).catch((error) => {
         reject(error);
       });
@@ -213,7 +213,7 @@ class Blockchain {
         return;
       }
 
-      for(let i = 1; i < self.chain.length; i++) {
+      for (let i = 1; i < self.chain.length; i++) {
         let block = self.chain[i];
         let data = await block.getBData();
         if (data.address === address) {
@@ -234,12 +234,28 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
-      if (!self.chain || self.chain.length <= 1) {
+
+      if (!self.chain) {
         resolve(errorLog);
         return;
       }
 
-      for(let i = 1; i < self.chain.length; i++) {
+      for (let i = 0; i < self.chain.length; i++) {
+        let currentBlock = self.chain[i];
+        if (!(await currentBlock.validate())) {
+          errorLog.push({
+            index: i,
+            error: 'Block is not valid'
+          });
+        }
+      }
+
+      if (self.chain.length <= 1) {
+        resolve(errorLog);
+        return;
+      }
+
+      for (let i = 1; i < self.chain.length; i++) {
         let previousBlock = self.chain[i - 1];
         let currentBlock = self.chain[i];
 
@@ -247,16 +263,6 @@ class Blockchain {
           errorLog.push({
             index: i,
             error: 'Previous block hash is not equal to current block hash'
-          });
-        }
-      }
-
-      for (let i = 0; i < self.chain.length; i++) {
-        let currentBlock = self.chain[i]; 
-        if (!(await currentBlock.validate())) {
-          errorLog.push({
-            index: i,
-            error: 'Block is not valid'
           });
         }
       }
